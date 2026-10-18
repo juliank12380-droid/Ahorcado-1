@@ -20,6 +20,7 @@ export interface FieldPlayer {
   online?: boolean;
   isMe?: boolean;
   level?: number;
+  xp?: number;
   rankEmoji?: string;
   rankColor?: string;
 }
@@ -80,7 +81,11 @@ export default function GameField({
       <div className="chalk-card px-4 pt-4 pb-5 sm:px-6">
         <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
           {writer && (
-            <span className="chip" style={{ borderColor: `${writer.color}66`, color: writer.color }}>
+            <span
+              className="chip"
+              style={{ borderColor: `${writer.color}66`, color: writer.color }}
+              title={writer.level ? `${writer.rankEmoji} Nivel ${writer.level} · ${writer.xp} XP` : undefined}
+            >
               <Crown className="w-3.5 h-3.5" /> {writer.name} escribió la palabra
             </span>
           )}
@@ -158,8 +163,8 @@ export default function GameField({
                   {p.isMe ? <span className="text-chalk-dim text-sm"> (tú)</span> : null}
                 </p>
                 {p.level != null && p.level > 0 && (
-                  <p className="text-[0.6rem] font-extrabold mt-0.5" style={{ color: p.rankColor ?? "#b9b4a6" }}>
-                    {p.rankEmoji} Niv. {p.level}
+                  <p className="text-[0.58rem] font-extrabold mt-0.5 opacity-90" style={{ color: p.rankColor ?? "#b9b4a6" }}>
+                    {p.rankEmoji} Niv. {p.level} · {p.xp} XP
                   </p>
                 )}
                 <p className="text-[0.7rem] font-extrabold tracking-wide text-chalk-dim mt-1">

@@ -228,6 +228,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
       online: p.online,
       isMe: p.id === state.me,
       level: p.level,
+      xp: p.xp,
       rankEmoji: p.rankEmoji,
       rankColor: p.rankColor,
     })) ?? [];
@@ -417,8 +418,8 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                             {p.name}
                             {p.id === state.me && <span className="text-chalk-dim font-bold"> (tú)</span>}
                           </span>
-                          <span className="text-[0.65rem] font-bold block leading-tight" style={{ color: p.rankColor ?? "#b9b4a6" }}>
-                            {p.rankEmoji} {p.rankName} · Niv. {p.level}
+                          <span className="text-[0.65rem] font-bold block leading-tight opacity-90" style={{ color: p.rankColor ?? "#b9b4a6" }}>
+                            {p.rankEmoji} {p.rankName} · Niv. {p.level} · {p.xp} XP
                           </span>
                         </span>
                         {p.isHost && <Crown className="w-4 h-4 text-sun shrink-0" />}

@@ -77,10 +77,10 @@ export default function LocalPage() {
     setNameInput("");
   };
 
-  /** El sistema sortea quién escribe (evita repetir al anterior si hay 3+). */
+  /** El sistema sortea quién escribe (evita repetir al anterior para que rote). */
   const pickWriter = (list: LocalPlayer[], avoid: string | null): LocalPlayer => {
     let pool = list;
-    if (list.length > 2 && avoid) {
+    if (avoid) {
       const filtered = list.filter((p) => p.id !== avoid);
       if (filtered.length > 0) pool = filtered;
     }

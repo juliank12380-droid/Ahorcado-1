@@ -175,10 +175,10 @@ export async function POST(
       if (room.status !== "lobby" && room.status !== "finished") return err("La ronda ya empezó");
       if (rows.length < 2) return err("Se necesitan al menos 2 jugadores (1 escribe y 1+ adivinan)");
 
-      // El sistema elige al escritor AL AZAR. Con 2+ opciones evita repetir
-      // al escritor de la ronda anterior para que el lápiz vaya rotando.
+      // El sistema elige al escritor AL AZAR. Evita repetir al escritor de la
+      // ronda anterior para que el lápiz siempre rote (incluso si solo son 2).
       let candidates = rows;
-      if (rows.length > 2 && room.lastWriterId) {
+      if (room.lastWriterId) {
         const withoutLast = rows.filter((p) => p.id !== room.lastWriterId);
         if (withoutLast.length > 0) candidates = withoutLast;
       }
