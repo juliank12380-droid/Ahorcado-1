@@ -29,20 +29,28 @@ export const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
  * - conserva espacios internos
  * - colapsa múltiples espacios a uno
  */
+/**
+ * Normaliza una palabra o frase:
+ * - Mayúsculas
+ * - Sin acentos (conserva Ñ)
+ * - Conserva un solo espacio entre palabras
+ */
 export function normalizeWord(raw: string): string {
-  return raw
-    .trim()
-    .replace(/\s+/g, " ")
-    .toLocaleUpperCase("es")
-    .split("")
-    .map((c) => {
-      if (c === "Ñ") return "Ñ";
-      if (c === " ") return " ";
-      return c.normalize("NFD").replace(/[̀-ͯ]/g, "");
-    })
-    .join("")
+  // 1. Limpieza básica y mayúsculas
+  let text = raw.toLocaleUpperCase("es").trim();
+  
+  // 2. Normalizar caracteres uno a uno
+  text = text.split("").map(c => {
+    if (c === "Ñ") return "Ñ";
+    if (c === " " || c === "\t" || c === "\n") return " ";
+    // Quitar acentos
+    return c.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }).join("");
+
+  // 3. Limpiar todo lo que no sea letras A-Z, Ñ o Espacio
+  return text
     .replace(/[^A-ZÑ ]/g, "")
-    .replace(/\s+/g, " ")
+    .replace(/\s+/g, " ") // Colapsar múltiples espacios
     .trim();
 }
 

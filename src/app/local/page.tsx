@@ -403,7 +403,7 @@ export default function LocalPage() {
 
         {/* ---------------------------------- JUEGO ---------------------------------- */}
         {stage === "play" && game && (
-          <motion.section key="play" {...pageAnim}>
+          <motion.section key={`play-${game.word}`} {...pageAnim}>
             <GameField
               players={fieldPlayers}
               masked={maskWord(game.word ?? "", game.guessed)}
