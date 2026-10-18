@@ -216,9 +216,20 @@ export function applyGuess(
   return { ok: true, kind: "letter-miss", gameOver: over };
 }
 
-/** Palabra enmascarada vista por los adivinadores: letra o null por posición. */
+/**
+ * Palabra o frase enmascarada vista por los adivinadores.
+ * - Espacios: se devuelven como "/" (separador visual).
+ * - Letras acertadas: se devuelve la letra.
+ * - Letras ocultas: se devuelve null.
+ */
 export function maskWord(word: string, guessed: string): (string | null)[] {
-  return word.split("").map((c) => (guessed.includes(c) ? c : null));
+  const normWord = word.toLocaleUpperCase("es");
+  const normGuessed = guessed.toLocaleUpperCase("es");
+  
+  return normWord.split("").map((c) => {
+    if (c === " ") return "/";
+    return normGuessed.includes(c) ? c : null;
+  });
 }
 
 export function displayName(raw: string): string {

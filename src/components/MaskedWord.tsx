@@ -3,27 +3,27 @@
 import { AnimatePresence, motion } from "framer-motion";
 
 export interface MaskedWordProps {
-  /** Un array de letras reveladas, null para ocultas, o "/" para espacios. */
-  masked: (string | null)[];
-  /** Color de acento (tiza del jugador). */
+  /** 
+   * Puede ser un array (de la API) o un string (de RTDB).
+   * Array: [ "C", null, "/", "A" ]  (null = oculto)
+   * String: "C_/_A"                 (_ = oculto)
+   */
+  masked: (string | null)[] | string;
   accent?: string;
-  /** Para disparar la animación de sacudida. */
   shakeKey?: number;
-  /** Modo compacto (para listas o espacios pequeños). */
   compact?: boolean;
 }
 
-/**
- * Muestra la palabra oculta.
- * - Las letras tienen un guion abajo.
- * - Los espacios se muestran como un "/" grande y claro.
- */
+/** La palabra oculta, letra a letra, estilo tiza sobre pizarra. */
 export default function MaskedWord({
   masked,
   accent = "#f2efe6",
   shakeKey = 0,
   compact = false,
 }: MaskedWordProps) {
+  // Convertimos a array de trabajo uniforme
+  const items = Array.isArray(masked) ? masked : masked.split("");
+
   return (
     <motion.div
       key={shakeKey}
@@ -31,8 +31,11 @@ export default function MaskedWord({
       animate={shakeKey ? { x: [0, -10, 8, -6, 4, 0] } : undefined}
       transition={{ duration: 0.4 }}
     >
-      {masked.map((letter, i) => {
-        const isSpace = letter === "/";
+      {items.map((rawLetter, i) => {
+        // Normalizamos el caracter: null o "_" significan oculto
+        const isHidden = rawLetter === null || rawLetter === "_";
+        const isSpace = rawLetter === "/";
+        const letter = isHidden ? null : rawLetter;
 
         if (isSpace) {
           return (
@@ -48,7 +51,7 @@ export default function MaskedWord({
                 className="hand font-black opacity-50"
                 style={{
                   fontSize: compact ? "1.8rem" : "clamp(2.2rem, 9vw, 3.6rem)",
-                  color: "#FFD93D", // Siempre en amarillo sol para que resalte
+                  color: "#FFD93D", // Amarillo brillante para el espacio
                   textShadow: "0 0 12px rgba(255, 217, 61, 0.4)",
                   transform: "rotate(10deg)",
                 }}
@@ -68,7 +71,7 @@ export default function MaskedWord({
               height: compact ? "2rem" : "clamp(2.4rem, 8vw, 3.6rem)",
             }}
           >
-            {/* El guion de la tiza debajo de la letra */}
+            {/* Guion de la tiza */}
             <span
               className="absolute bottom-0 left-0 right-0 h-[3.5px] rounded-full"
               style={{

@@ -187,7 +187,8 @@ export async function syncRoomToRtdb(room: RoomRow, rows: PlayerRow[]): Promise<
     network: room.network,
     round: room.round,
     guessed: room.guessed,
-    // Como texto: RTDB descarta los null de los arreglos.
+    // Sincronización RTDB: usamos un formato de cadena simple.
+    // Ej: "C_S_/A_U_" donde "_" es oculto y "/" es espacio.
     masked:
       inGame && room.word
         ? maskWord(room.word, room.guessed)
