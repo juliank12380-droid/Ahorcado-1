@@ -21,22 +21,40 @@ export const PLAYER_COLORS = [
 
 export const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
-/** Normaliza una letra/palabra: mayúsculas, sin acentos, conservando la Ñ. */
+/**
+ * Normaliza una palabra o frase:
+ * - mayúsculas
+ * - sin acentos
+ * - conserva la Ñ
+ * - conserva espacios internos
+ * - colapsa múltiples espacios a uno
+ */
 export function normalizeWord(raw: string): string {
   return raw
     .trim()
+    .replace(/\s+/g, " ")
     .toLocaleUpperCase("es")
     .split("")
     .map((c) => {
       if (c === "Ñ") return "Ñ";
+      if (c === " ") return " ";
       return c.normalize("NFD").replace(/[̀-ͯ]/g, "");
     })
     .join("")
-    .replace(/[^A-ZÑ]/g, "");
+    .replace(/[^A-ZÑ ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
+/** Cuenta solo letras, ignorando espacios. */
+export function letterCount(text: string): number {
+  return text.replace(/ /g, "").length;
+}
+
+/** Acepta frases de 2 a 32 letras (los espacios no cuentan). */
 export function isValidWord(w: string): boolean {
-  return /^[A-ZÑ]{2,24}$/.test(w);
+  const letters = letterCount(w);
+  return /^[A-ZÑ ]+$/.test(w) && letters >= 2 && letters <= 32;
 }
 
 export function isValidLetter(l: string): boolean {

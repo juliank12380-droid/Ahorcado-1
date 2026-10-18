@@ -18,16 +18,20 @@ export default function MaskedWord({ masked, accent = "#f2efe6", shakeKey = 0, c
       animate={shakeKey ? { x: [0, -8, 7, -5, 3, 0] } : undefined}
       transition={{ duration: 0.4 }}
     >
-      {masked.map((letter, i) => (
+      {masked.map((letter, i) => {
+        const isSpaceMarker = letter === "/";
+        return (
         <div
           key={i}
           className="relative flex items-end justify-center"
           style={{ width: compact ? "1.35rem" : "clamp(1.6rem, 5.4vw, 2.6rem)", height: compact ? "2rem" : "clamp(2.4rem, 8vw, 3.6rem)" }}
         >
-          <span
-            className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full"
-            style={{ background: accent, opacity: 0.55, boxShadow: `0 0 8px ${accent}66` }}
-          />
+          {!isSpaceMarker && (
+            <span
+              className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full"
+              style={{ background: accent, opacity: 0.55, boxShadow: `0 0 8px ${accent}66` }}
+            />
+          )}
           <AnimatePresence mode="popLayout">
             {letter && (
               <motion.span
@@ -43,7 +47,7 @@ export default function MaskedWord({ masked, accent = "#f2efe6", shakeKey = 0, c
             )}
           </AnimatePresence>
         </div>
-      ))}
+      )})}
     </motion.div>
   );
 }

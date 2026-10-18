@@ -247,7 +247,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
   const submitWord = async () => {
     const w = normalizeWord(wordDraft);
-    if (!isValidWord(w)) return push("La palabra debe tener entre 2 y 24 letras (solo letras)");
+    if (!isValidWord(w)) return push("La respuesta debe tener entre 2 y 32 letras. Puedes usar espacios.");
     setBusy(true);
     const ok = await act("submitWord", { word: w, hint: hintDraft });
     if (ok) {

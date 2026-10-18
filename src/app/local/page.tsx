@@ -104,7 +104,7 @@ export default function LocalPage() {
 
   const submitWord = () => {
     const word = normalizeWord(wordInput);
-    if (!isValidWord(word)) return push("La palabra debe tener entre 2 y 24 letras (solo letras)");
+    if (!isValidWord(word)) return push("La respuesta debe tener entre 2 y 32 letras. Puedes usar espacios.");
     const guessers = players.filter((p) => p.id !== writerId);
     const lives = distributeLives(guessers.length);
     const enginePlayers = guessers.map((p, i) => ({
@@ -357,9 +357,9 @@ export default function LocalPage() {
                   <input
                     className="input-chalk tracking-[0.3em] uppercase pr-12 text-center"
                     type={showWord ? "text" : "password"}
-                    placeholder="PALABRA SECRETA"
+                    placeholder="PALABRA O FRASE"
                     value={wordInput}
-                    maxLength={24}
+                    maxLength={40}
                     autoFocus
                     autoComplete="off"
                     autoCorrect="off"

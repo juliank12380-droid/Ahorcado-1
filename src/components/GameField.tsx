@@ -209,12 +209,12 @@ export default function GameField({
                     </p>
                     <div className="flex gap-2">
                       <input
-                        className="input-chalk text-center tracking-[0.35em] uppercase"
-                        placeholder={`${masked.length} letras`}
+                        className="input-chalk text-center tracking-[0.22em] uppercase"
+                        placeholder={`${masked.length} caracteres`}
                         value={riskValue}
                         maxLength={masked.length}
                         autoFocus
-                        onChange={(e) => setRiskValue(e.target.value.replace(/[^a-zA-ZñÑáéíóúüÁÉÍÓÚÜ]/g, ""))}
+                        onChange={(e) => setRiskValue(e.target.value.replace(/[^a-zA-ZñÑáéíóúüÁÉÍÓÚÜ\s]/g, ""))}
                         onKeyDown={(e) => e.key === "Enter" && submitRisk()}
                       />
                       <button type="button" className="btn-chalk btn-fill px-4" onClick={submitRisk} style={{ ["--btn-color" as never]: "#6bcb77" }}>
