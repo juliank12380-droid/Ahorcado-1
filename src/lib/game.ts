@@ -213,21 +213,31 @@ export function displayName(raw: string): string {
  * Para el escritor: gana puntos si nadie adivina su palabra.
  *   25 pts fijos por cada adivinador ahorcado.
  */
+/**
+ * Puntos por ronda. Cada vida vale 100 / vidasTotales.
+ *
+ * Ejemplos:
+ *  - 1 vida total  → cada vida vale 100 pts
+ *  - 2 vidas total → cada vida vale 50 pts
+ *  - 5 vidas total → cada vida vale 20 pts
+ *  - 10 vidas      → cada vida vale 10 pts
+ *
+ * Puntos = vidasSobrantes × (100 / vidasTotales)
+ */
 export function calcRoundPoints(opts: {
   role: "guesser" | "writer";
   won: boolean;
   failsUsed: number;
   failsTotal: number;
-  guessersHung?: number; // solo para el escritor
+  guessersHung?: number;
 }): number {
   if (opts.role === "guesser") {
-    if (!opts.won && opts.failsUsed >= opts.failsTotal) return 0; // ahorcado
+    if (!opts.won && opts.failsUsed >= opts.failsTotal) return 0;
     const remaining = opts.failsTotal - opts.failsUsed;
     if (opts.failsTotal === 0) return 0;
-    const pointsPerLife = Math.round((10 / opts.failsTotal) * 10); // escala inversa
+    const pointsPerLife = Math.round(100 / opts.failsTotal);
     return remaining * pointsPerLife;
   } else {
-    // Escritor: solo gana si los adivinadores no descifran la palabra
     if (!opts.won) return 0;
     return (opts.guessersHung ?? 1) * 25;
   }
