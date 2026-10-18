@@ -587,11 +587,15 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                     <label className="text-sm font-bold text-chalk-dim mb-1.5 block">Palabra secreta</label>
                     <div className="relative">
                       <input
-                        className="input-chalk tracking-[0.3em] uppercase pr-12 text-center"
-                        type={showWord ? "text" : "password"}
-                        placeholder="ESCRÍBELA AQUÍ"
+                        className="input-chalk uppercase pr-12 text-center"
+                        style={{
+                          letterSpacing: showWord ? "0.15em" : "0.3em",
+                          ...(showWord ? {} : { WebkitTextSecurity: "disc" } as React.CSSProperties),
+                        }}
+                        type="text"
+                        placeholder="PALABRA O FRASE"
                         value={wordDraft}
-                        maxLength={24}
+                        maxLength={40}
                         autoFocus
                         autoComplete="off"
                         autoCorrect="off"

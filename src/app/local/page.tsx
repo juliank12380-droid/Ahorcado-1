@@ -355,14 +355,19 @@ export default function LocalPage() {
               <div className="relative grid gap-4">
                 <div className="relative">
                   <input
-                    className="input-chalk tracking-[0.3em] uppercase pr-12 text-center"
-                    type={showWord ? "text" : "password"}
+                    className="input-chalk uppercase pr-12 text-center"
+                    style={{
+                      letterSpacing: showWord ? "0.15em" : "0.3em",
+                      ...(showWord ? {} : { WebkitTextSecurity: "disc" } as React.CSSProperties),
+                    }}
+                    type="text"
                     placeholder="PALABRA O FRASE"
                     value={wordInput}
                     maxLength={40}
                     autoFocus
                     autoComplete="off"
                     autoCorrect="off"
+                    autoCapitalize="characters"
                     spellCheck={false}
                     onChange={(e) => setWordInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && submitWord()}

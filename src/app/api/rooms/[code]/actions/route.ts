@@ -228,7 +228,7 @@ export async function POST(
       if (me.role !== "writer") return err("Solo el escritor elige la palabra", 403);
       const word = normalizeWord(String(body.word ?? ""));
       const hint = String(body.hint ?? "").trim().slice(0, 80) || null;
-      if (!isValidWord(word)) return err("La palabra debe tener entre 2 y 24 letras (solo letras)");
+      if (!isValidWord(word)) return err("La respuesta debe tener entre 2 y 32 letras. Puedes usar espacios.");
       const st = toEngineState(room, rows);
       st.status = "playing";
       st.word = word;
