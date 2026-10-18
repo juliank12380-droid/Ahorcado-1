@@ -27,6 +27,7 @@ import {
 import GameField, { type FieldPlayer } from "@/components/GameField";
 import Hangman from "@/components/Hangman";
 import JoinRoomPanel from "@/components/JoinRoomPanel";
+import SessionScoreboard from "@/components/SessionScoreboard";
 import ResultOverlay from "@/components/ResultOverlay";
 import ColorPicker from "@/components/ColorPicker";
 import { Spinner, useToasts } from "@/components/ui";
@@ -737,6 +738,11 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
             <DoorOpen className="w-5 h-5" /> Salir de la sala
           </button>
         </ResultOverlay>
+      )}
+
+      {/* Marcador flotante de puntos de sesión */}
+      {state && state.players.some((p) => p.sessionPoints > 0) && (
+        <SessionScoreboard players={state.players} myId={state.me} />
       )}
 
       {stack}

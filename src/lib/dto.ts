@@ -16,6 +16,7 @@ export interface PlayerDTO {
   rankName: string;
   rankEmoji: string;
   rankColor: string;
+  sessionPoints: number;
 }
 
 export type RoomStatus = "lobby" | "writing" | "playing" | "finished";

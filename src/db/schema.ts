@@ -66,6 +66,8 @@ export const players = pgTable(
     /** Nivel y XP cacheados del perfil (se sincronizan al entrar/actualizar). */
     level: integer("level").notNull().default(1),
     xp: integer("xp").notNull().default(0),
+    /** Puntos acumulados en esta sesión de sala (se reinician al salir). */
+    sessionPoints: integer("session_points").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

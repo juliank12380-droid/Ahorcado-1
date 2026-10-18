@@ -198,3 +198,37 @@ export function maskWord(word: string, guessed: string): (string | null)[] {
 export function displayName(raw: string): string {
   return raw.trim().replace(/\s+/g, " ").slice(0, 16);
 }
+
+/**
+ * Calcula cuántos puntos gana un adivinador al terminar una ronda.
+ * Escala inversa: más vidas sobran = más puntos.
+ *
+ * Fórmula: puntos = vidasSobrantes * (10 / vidasTotales) * 10
+ * Ejemplos con 5 vidas totales:
+ *   5 vidas sobrantes (sin fallos)  → 10 pts por vida = 50 pts
+ *   4 sobrantes                     → 8 pts por vida  = 32 pts
+ *   1 sobrante                      → 2 pts por vida  = 2 pts
+ *   0 sobrantes (ahorcado)          → 0 pts
+ *
+ * Para el escritor: gana puntos si nadie adivina su palabra.
+ *   25 pts fijos por cada adivinador ahorcado.
+ */
+export function calcRoundPoints(opts: {
+  role: "guesser" | "writer";
+  won: boolean;
+  failsUsed: number;
+  failsTotal: number;
+  guessersHung?: number; // solo para el escritor
+}): number {
+  if (opts.role === "guesser") {
+    if (!opts.won && opts.failsUsed >= opts.failsTotal) return 0; // ahorcado
+    const remaining = opts.failsTotal - opts.failsUsed;
+    if (opts.failsTotal === 0) return 0;
+    const pointsPerLife = Math.round((10 / opts.failsTotal) * 10); // escala inversa
+    return remaining * pointsPerLife;
+  } else {
+    // Escritor: solo gana si los adivinadores no descifran la palabra
+    if (!opts.won) return 0;
+    return (opts.guessersHung ?? 1) * 25;
+  }
+}

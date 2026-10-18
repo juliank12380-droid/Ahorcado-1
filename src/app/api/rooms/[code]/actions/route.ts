@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { players, rooms, type PlayerRow, type RoomRow } from "@/db/schema";
 import {
   applyGuess,
+  calcRoundPoints,
   distributeLives,
   isValidWord,
   normalizeWord,
@@ -258,7 +259,34 @@ export async function POST(
       else if (result.kind === "word-hit") ev = `¡${me.name} adivinó la palabra completa!`;
       else ev = `${me.name} arriesgó la palabra y falló (−2 vidas)`;
       if (st.status === "finished") {
-        ev = st.winner === "guessers" ? `Descifraron la palabra. ¡Ganan los adivinadores!` : `Todos ahorcados. ¡Gana ${st.players.find((p) => p.role === "writer")?.name ?? "el escritor"}!`;
+        ev = st.winner === "guessers"
+          ? `Descifraron la palabra. ¡Ganan los adivinadores!`
+          : `Todos ahorcados. ¡Gana ${st.players.find((p) => p.role === "writer")?.name ?? "el escritor"}!`;
+
+        // ── Calcular y sumar puntos de sesión ──
+        const guessersHung = st.players.filter(
+          (p) => p.role === "guesser" && p.status === "hung",
+        ).length;
+
+        for (const sp of st.players) {
+          const dbRow = rows.find((r) => r.id === sp.id);
+          if (!dbRow) continue;
+
+          const pts = calcRoundPoints({
+            role: sp.role as "guesser" | "writer",
+            won: st.winner === (sp.role === "guesser" ? "guessers" : "writer"),
+            failsUsed: sp.failsUsed,
+            failsTotal: sp.failsTotal,
+            guessersHung,
+          });
+
+          if (pts > 0) {
+            await db
+              .update(players)
+              .set({ sessionPoints: dbRow.sessionPoints + pts })
+              .where(eq(players.id, sp.id));
+          }
+        }
       }
       await persistEngine(room.id, st, ev);
       return finish(ev);

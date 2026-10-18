@@ -131,6 +131,7 @@ export function buildRoomState(
     rankName: rank.name,
     rankEmoji: rank.emoji,
     rankColor: rank.color,
+    sessionPoints: p.sessionPoints,
     role: p.role as PlayerDTO["role"],
     failsUsed: p.failsUsed,
     failsTotal: p.failsTotal,
