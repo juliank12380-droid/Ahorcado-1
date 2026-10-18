@@ -137,7 +137,7 @@ export function nextTurnId(players: EnginePlayer[], fromId: string | null): stri
 }
 
 export function isWordComplete(word: string, guessed: string): boolean {
-  return word.split("").every((c) => guessed.includes(c));
+  return word.split("").every((c) => c === " " || guessed.includes(c));
 }
 
 /**
