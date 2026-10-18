@@ -3,10 +3,15 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Trophy, X } from "lucide-react";
-import type { PlayerDTO } from "@/lib/dto";
+interface ScorePlayer {
+  id: string;
+  name: string;
+  color: string;
+  sessionPoints: number;
+}
 
 interface Props {
-  players: PlayerDTO[];
+  players: ScorePlayer[];
   myId: string | null;
 }
 

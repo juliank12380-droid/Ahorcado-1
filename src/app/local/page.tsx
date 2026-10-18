@@ -12,6 +12,7 @@ import { useToasts } from "@/components/ui";
 import { burstConfetti } from "@/lib/confetti";
 import {
   applyGuess,
+  calcRoundPoints,
   displayName,
   distributeLives,
   isValidWord,
@@ -21,11 +22,14 @@ import {
   TOTAL_LIVES,
   type EngineState,
 } from "@/lib/game";
+import SessionScoreboard from "@/components/SessionScoreboard";
 
 interface LocalPlayer {
   id: string;
   name: string;
   color: string;
+  /** Puntos acumulados durante esta sesión local. */
+  sessionPoints: number;
 }
 
 type Stage = "setup" | "reveal" | "word" | "play";
@@ -73,7 +77,7 @@ export default function LocalPage() {
     if (name.length < 2) return push("Escribe un nombre de al menos 2 letras");
     if (players.length >= MAX_PLAYERS) return push(`Máximo ${MAX_PLAYERS} jugadores`);
     if (players.some((p) => p.name.toLowerCase() === name.toLowerCase())) return push("Ese nombre ya está en la lista");
-    setPlayers((ps) => [...ps, { id: uid(), name, color: colorFor(ps.length) }]);
+    setPlayers((ps) => [...ps, { id: uid(), name, color: colorFor(ps.length), sessionPoints: 0 }]);
     setNameInput("");
   };
 
@@ -158,6 +162,37 @@ export default function LocalPage() {
 
     if (st.status === "finished") {
       setLastEvent(st.winner === "guessers" ? "¡Ganan los adivinadores!" : `Todos ahorcados. ¡Gana ${writer?.name ?? "el escritor"}!`);
+
+      // Sumar puntos de sesión a TODOS los jugadores locales.
+      const guessersHung = st.players.filter(
+        (p) => p.role === "guesser" && p.status === "hung",
+      ).length;
+
+      setPlayers((prev) =>
+        prev.map((pl) => {
+          if (pl.id === writer?.id) {
+            const pts = calcRoundPoints({
+              role: "writer",
+              won: st.winner === "writer",
+              failsUsed: 0,
+              failsTotal: 0,
+              guessersHung,
+            });
+            return { ...pl, sessionPoints: pl.sessionPoints + pts };
+          }
+
+          const gp = st.players.find((p) => p.id === pl.id);
+          if (!gp) return pl;
+          const pts = calcRoundPoints({
+            role: "guesser",
+            won: st.winner === "guessers",
+            failsUsed: gp.failsUsed,
+            failsTotal: gp.failsTotal,
+          });
+          return { ...pl, sessionPoints: pl.sessionPoints + pts };
+        }),
+      );
+
       if (st.winner === "guessers" && !celebrated) {
         setCelebrated(true);
         void burstConfetti(players.map((p) => p.color));
@@ -245,7 +280,13 @@ export default function LocalPage() {
                           type="button"
                           aria-label={`Quitar a ${p.name}`}
                           className="text-chalk-dim hover:text-coral transition-colors"
-                          onClick={() => setPlayers((ps) => ps.filter((x) => x.id !== p.id).map((x, idx) => ({ ...x, color: colorFor(idx) })))}
+                          onClick={() =>
+                            setPlayers((ps) =>
+                              ps
+                                .filter((x) => x.id !== p.id)
+                                .map((x, idx) => ({ ...x, color: colorFor(idx) })),
+                            )
+                          }
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -411,6 +452,11 @@ export default function LocalPage() {
             Menú
           </Link>
         </ResultOverlay>
+      )}
+
+      {/* Marcador de puntos de sesión: también existe en modo mismo teléfono */}
+      {players.some((p) => p.sessionPoints > 0) && (
+        <SessionScoreboard players={players} myId={null} />
       )}
 
       {stack}
