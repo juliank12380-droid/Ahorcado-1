@@ -29,7 +29,8 @@ export default function SessionScoreboard({ players, myId }: Props) {
   const myPoints = players.find((p) => p.id === myId)?.sessionPoints ?? 0;
 
   return (
-    <div className="fixed top-4 right-4 z-30 flex flex-col items-end gap-1.5">
+    // BUGFIX: top-4 lo solapaba con la barra superior de la sala (botón Salir).
+    <div className="fixed top-[4.5rem] right-4 z-30 flex flex-col items-end gap-1.5">
       {/* Botón flotante */}
       <motion.button
         type="button"

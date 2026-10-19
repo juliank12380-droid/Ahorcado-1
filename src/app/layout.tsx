@@ -20,10 +20,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es">
       <head>
-        {/* Fuentes auto-alojadas: sin dependencias externas en tiempo de build */}
+        {/* Fuentes auto-alojadas: sin dependencias externas en tiempo de build.
+            Los @font-face viven en globals.css (los link de stylesheet manual
+            están desaconsejados por Next). */}
         <link rel="preload" href="/fonts/caveat.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/nunito.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="stylesheet" href="/fonts/fonts.css" />
       </head>
       <body className="bg-board text-chalk font-body antialiased min-h-dvh selection:bg-chalk/20">
         <Backdrop />

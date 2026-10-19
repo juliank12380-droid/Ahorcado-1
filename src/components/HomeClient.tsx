@@ -446,7 +446,7 @@ export default function HomeClient() {
       </AnimatePresence>
 
       <p className="mt-8 text-center text-[0.7rem] font-bold text-chalk-dim/70 flex items-center justify-center gap-1.5">
-        <Users className="w-3.5 h-3.5" /> 2–8 jugadores · 10 vidas repartidas
+        <Users className="w-3.5 h-3.5" /> 2–11 jugadores · 10 vidas repartidas
       </p>
       {stack}
     </main>

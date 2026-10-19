@@ -53,6 +53,10 @@ export async function POST(req: Request) {
       ? await loadProfileFromFirestore(body.idToken, identity.identity.uid)
       : null;
 
+  // BUGFIX: el nombre del perfil de Google puede ser larguísimo y columna es
+  // varchar(24); sin recortar, crear sala fallaba con error 500.
+  const safeName = (cloudProfile?.name ? displayName(cloudProfile.name) : "") || name;
+
   let roomId = "";
   let code = "";
   for (let i = 0; i < 8; i++) {
@@ -76,7 +80,7 @@ export async function POST(req: Request) {
     .insert(players)
     .values({
       roomId,
-      name: cloudProfile?.name || name,
+      name: safeName,
       passHash: "",
       uid: identity.identity.uid,
       photo: identity.identity.photo,

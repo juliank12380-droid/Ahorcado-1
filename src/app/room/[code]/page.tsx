@@ -45,6 +45,41 @@ const pageAnim = {
   transition: { duration: 0.3, ease: "easeOut" as const },
 };
 
+/**
+ * Copia texto al portapapeles. BUGFIX: el modo LAN se juega sobre HTTP
+ * (http://192.168.x.x), donde `navigator.clipboard` no existe y copiar el
+ * código de la sala siempre fallaba.
+ */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* sigue con el plan B */
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    ta.style.pointerEvents = "none";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Clave para no registrar dos veces (Firestore) la misma ronda terminada. */
+const statsKey = (code: string) => `ahorcado:stats:${code.toUpperCase()}`;
+
 export default function RoomPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
   const router = useRouter();
@@ -64,8 +99,8 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
   const inFlight = useRef(false);
   const celebratedRef = useRef(0);
-  const statsRef = useRef(0);
   const failsRef = useRef<{ round: number; fails: number }>({ round: -1, fails: 0 });
+  const guessBusy = useRef(false);
   const { user: fbUser } = useFirebaseUser();
 
   /* ------------------------------- polling ------------------------------- */
@@ -180,36 +215,51 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
       setShake((s) => s + 1);
       failsRef.current.fails = used;
     }
-    // registrar estadísticas de la ronda en Firestore (perfil en la nube)
-    if (state.status === "finished" && state.winner && statsRef.current !== state.round) {
-      statsRef.current = state.round;
+    // Registrar estadísticas de la ronda en Firestore (perfil en la nube).
+    // BUGFIX doble:
+    //  1. Antes se marcaba la ronda como registrada aunque Firebase Auth aún no
+    //     había cargado el usuario → algunas rondas jamás se registraban.
+    //  2. La marca vivía en un useRef, así que al RECARGAR la página con la
+    //     ronda terminada se registraba otra vez (inflaba partidas y XP).
+    // Ahora la marca persiste en localStorage y solo se pone cuando de verdad
+    // hay usuario de Firebase disponible.
+    if (state.status === "finished" && state.winner && fbUser) {
       const meP = state.players.find((p) => p.id === state.me);
-      if (fbUser && meP) {
-        const won =
-          (state.winner === "guessers" && meP.role === "guesser") ||
-          (state.winner === "writer" && meP.role === "writer");
-        void recordGameResult({
-          uid: fbUser.uid,
-          role: meP.role as "guesser" | "writer",
-          won,
-          lettersGuessed: meP.role === "guesser"
-            ? state.guessed.split("").filter((c) => state.word?.includes(c)).length
-            : undefined,
-          lettersMissed: meP.role === "guesser" ? meP.failsUsed : undefined,
-          wordLength: state.word?.length,
-          failsUsed: meP.failsUsed,
-          failsTotal: meP.failsTotal,
-        });
+      if (meP) {
+        let recorded = -1;
+        try {
+          recorded = Number(localStorage.getItem(statsKey(code)) ?? "-1");
+        } catch { /* sin almacenamiento */ }
+        if (recorded !== state.round) {
+          try {
+            localStorage.setItem(statsKey(code), String(state.round));
+          } catch { /* noop */ }
+          const won =
+            (state.winner === "guessers" && meP.role === "guesser") ||
+            (state.winner === "writer" && meP.role === "writer");
+          void recordGameResult({
+            uid: fbUser.uid,
+            role: meP.role as "guesser" | "writer",
+            won,
+            lettersGuessed: meP.role === "guesser"
+              ? state.guessed.split("").filter((c) => state.word?.includes(c)).length
+              : undefined,
+            lettersMissed: meP.role === "guesser" ? meP.failsUsed : undefined,
+            wordLength: state.word?.length,
+            failsUsed: meP.failsUsed,
+            failsTotal: meP.failsTotal,
+          });
+        }
       }
     }
-  }, [state, fbUser]);
+  }, [state, fbUser, code]);
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
+    const ok = await copyText(code);
+    if (ok) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
-    } catch {
+    } else {
       push("No se pudo copiar");
     }
   };
@@ -242,7 +292,9 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     : mePlayer.role === "writer"
       ? "Tú escribiste la palabra. Mira cómo la descifran…"
       : mePlayer.status === "hung"
-        ? "Quedaste ahorcado. Espera la siguiente ronda…"
+        ? mePlayer.failsTotal === 0
+          ? "Llegaste a mitad de ronda. Entras en la siguiente…"
+          : "Quedaste ahorcado. Espera la siguiente ronda…"
         : `${state?.players.find((p) => p.id === state.currentTurnId)?.name ?? "Alguien"} está pensando…`;
 
   const submitWord = async () => {
@@ -704,7 +756,15 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
               canPlay={canPlay}
               hideKeyboard={mePlayer?.role === "writer"}
               waitingLabel={waitingLabel}
-              onGuess={(v) => void act("guess", { value: v })}
+              onGuess={(v) => {
+                // BUGFIX: un doble toque rápido enviaba la misma jugada dos
+                // veces y el segundo intento respondía con un error feo.
+                if (guessBusy.current) return;
+                guessBusy.current = true;
+                void act("guess", { value: v }).finally(() => {
+                  guessBusy.current = false;
+                });
+              }}
               shakeKey={shake}
               headerExtra={
                 mePlayer?.role === "writer" && state.word ? (

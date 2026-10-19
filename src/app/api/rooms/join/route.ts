@@ -118,15 +118,23 @@ export async function POST(req: Request) {
       ? validWantedColor
       : (PLAYER_COLORS.find((c) => !takenColors.has(c.value))?.value ?? PLAYER_COLORS[0].value);
 
+  // BUGFIX: el nombre del perfil de Google puede superar los varchar(24) de la
+  // columna y romper la inserción; además, quien entra a MITAD de ronda quedaba
+  // como adivinador "vivo" con 0 vidas: podía recibir turnos y moría al primer
+  // fallo. Ahora entra "hung" (espera la próxima ronda).
+  const safeName = (cloudProfile?.name ? displayName(cloudProfile.name) : "") || name;
+  const midRound = room.status === "playing" || room.status === "writing";
+
   const [player] = await db
     .insert(players)
     .values({
       roomId: room.id,
-      name: cloudProfile?.name || name,
+      name: safeName,
       passHash: "",
       uid,
       photo,
       color: cloudProfile?.color || color,
+      status: midRound ? "hung" : "alive",
       level: cloudProfile?.stats?.level ?? 1,
       xp: cloudProfile?.stats?.xp ?? 0,
     })

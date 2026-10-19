@@ -6,6 +6,14 @@
 export const TOTAL_LIVES = 10;
 export const WORD_GUESS_PENALTY = 2; // arriesgar la palabra completa y fallar cuesta 2 vidas
 
+/** Largo máximo de un `lastEvent` (debe caber con margen en la columna de la BD). */
+export const MAX_EVENT_LEN = 140;
+
+/** Recorta un texto de evento para que nunca desborde la columna `last_event`. */
+export function clipEvent(text: string): string {
+  return text.length > MAX_EVENT_LEN ? text.slice(0, MAX_EVENT_LEN - 1) + "…" : text;
+}
+
 export const PLAYER_COLORS = [
   { id: "blanco", value: "#F2EFE6", name: "Tiza" },
   { id: "rojo", value: "#FF6B6B", name: "Coral" },
@@ -184,7 +192,8 @@ export function applyGuess(
   // Intento de palabra completa
   if (guess.length > 1) {
     if (guess.length !== st.word.length) {
-      return { ok: false, error: `La palabra tiene ${st.word.length} letras` };
+      // st.word.length incluye los espacios de las frases (se ven como "/")
+      return { ok: false, error: `La respuesta tiene ${st.word.length} caracteres contando los espacios (/)` };
     }
     if (guess === st.word) {
       for (const c of guess) if (!st.guessed.includes(c)) st.guessed += c;

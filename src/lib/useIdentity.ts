@@ -43,20 +43,34 @@ export function useIdentity(): IdentityState {
   const [profileTick, setProfileTick] = useState(0);
   const [hydrated, setHydrated] = useState(false);
 
+  // Hidratación desde localStorage. LINT-FIX: los setState se difieren a un
+  // microtask para no provocar renders en cascada síncronos dentro del efecto.
   useEffect(() => {
-    const local = loadProfile();
-    if (local?.name) setDisplayNameState(local.name);
-    if (local?.color) setColorState(local.color);
-    setGuest(isGuestMode());
-    setHydrated(true);
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (cancelled) return;
+      const local = loadProfile();
+      if (local?.name) setDisplayNameState(local.name);
+      if (local?.color) setColorState(local.color);
+      setGuest(isGuestMode());
+      setHydrated(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      setProfile(null);
-      return;
-    }
     let cancelled = false;
+    if (!user) {
+      // LINT-FIX: reset diferido (antes era setState síncrono en el efecto).
+      void Promise.resolve().then(() => {
+        if (!cancelled) setProfile(null);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
     void loadProfileDoc(user.uid).then((doc) => {
       if (cancelled) return;
       setProfile(doc);

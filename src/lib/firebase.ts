@@ -218,7 +218,9 @@ export function useFirebaseUser(): { user: User | null; loading: boolean; enable
   useEffect(() => {
     const a = getFbAuth();
     if (!a) {
-      setLoading(false);
+      // Sin configuración, `loading` ya arranca en false (ver useState inicial);
+      // LINT-FIX: este setState síncrono era redundante y rompía la regla
+      // react-hooks/set-state-in-effect.
       return;
     }
     void initAnalytics();

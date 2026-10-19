@@ -25,7 +25,7 @@ export async function GET(
   const me = await authPlayer(room.id, playerId, token);
   if (!me) {
     return NextResponse.json(
-      { ok: false, error: "Tu sesión en esta sala no es válida. Vuelve a entrar con tu nombre y contraseña." },
+      { ok: false, error: "Tu sesión en esta sala ya no es válida. Entra de nuevo con el código de la sala." },
       { status: 401 },
     );
   }

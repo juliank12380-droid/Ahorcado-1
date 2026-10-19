@@ -33,7 +33,8 @@ export const rooms = pgTable(
     currentTurnId: uuid("current_turn_id"),
     lastWriterId: uuid("last_writer_id"),
     winner: varchar("winner", { length: 20 }),
-    lastEvent: varchar("last_event", { length: 56 }),
+    /** Último evento legible de la sala (se recorta con clipEvent antes de guardar). */
+    lastEvent: varchar("last_event", { length: 160 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -5,6 +5,7 @@ import { players, rooms, type PlayerRow, type RoomRow } from "@/db/schema";
 import {
   applyGuess,
   calcRoundPoints,
+  clipEvent,
   distributeLives,
   isValidWord,
   normalizeWord,
@@ -56,7 +57,7 @@ async function persistEngine(roomId: string, st: EngineState, lastEvent: string 
       currentTurnId: st.currentTurnId,
       status: st.status,
       winner: st.winner,
-      lastEvent,
+      lastEvent: lastEvent ? clipEvent(lastEvent) : null,
       updatedAt: new Date(),
     })
     .where(eq(rooms.id, roomId));
@@ -76,7 +77,7 @@ async function abortToLobby(roomId: string, event: string) {
       guessed: "",
       currentTurnId: null,
       winner: null,
-      lastEvent: event,
+      lastEvent: clipEvent(event),
       updatedAt: new Date(),
     })
     .where(eq(rooms.id, roomId));
@@ -87,8 +88,17 @@ async function resolveAfterRemoval(room: RoomRow, removed: PlayerRow, roomId: st
   const fresh = await getRoomPlayers(roomId);
   const st = toEngineState({ ...room }, fresh);
 
-  if (room.status === "writing" && removed.role === "writer") {
-    await abortToLobby(roomId, `${removed.name} salió en plena ronda: ronda cancelada`);
+  if (room.status === "writing") {
+    // BUGFIX: si el escritor se va, o si se va el último adivinador en plena
+    // escritura, la sala quedaba atascada para siempre en "writing".
+    if (removed.role === "writer") {
+      await abortToLobby(roomId, `${removed.name} salió en plena ronda: ronda cancelada`);
+      return null;
+    }
+    if (fresh.filter((p) => p.role === "guesser").length === 0) {
+      await abortToLobby(roomId, "Sin adivinadores, la ronda terminó");
+      return null;
+    }
     return null;
   }
   if (room.status !== "playing") return null;
@@ -164,7 +174,7 @@ export async function POST(
         .update(rooms)
         .set({
           visibility,
-          lastEvent: visibility === "public" ? "La sala ahora es pública" : "La sala ahora es privada",
+          lastEvent: clipEvent(visibility === "public" ? "La sala ahora es pública" : "La sala ahora es privada"),
           updatedAt: new Date(),
         })
         .where(eq(rooms.id, room.id));
@@ -209,7 +219,7 @@ export async function POST(
           currentTurnId: null,
           winner: null,
           lastWriterId: writer.id,
-          lastEvent: `Ronda ${room.round + 1}: ${writer.name} está eligiendo la palabra…`,
+          lastEvent: clipEvent(`Ronda ${room.round + 1}: ${writer.name} está eligiendo la palabra…`),
           updatedAt: new Date(),
         })
         .where(eq(rooms.id, room.id));
@@ -230,10 +240,14 @@ export async function POST(
       const hint = String(body.hint ?? "").trim().slice(0, 80) || null;
       if (!isValidWord(word)) return err("La respuesta debe tener entre 2 y 32 letras. Puedes usar espacios.");
       const st = toEngineState(room, rows);
+      // BUGFIX: sin adivinadores vivos la partida quedaba muerta para siempre.
+      const aliveGuessers = st.players.filter((p) => p.role === "guesser" && p.status === "alive");
+      if (aliveGuessers.length === 0) {
+        return err("No hay adivinadores en la sala. Espera a que se una alguien.");
+      }
       st.status = "playing";
       st.word = word;
-      const firstGuesser = st.players.find((p) => p.role === "guesser" && p.status === "alive") ?? null;
-      st.currentTurnId = firstGuesser?.id ?? null;
+      st.currentTurnId = aliveGuessers[0].id;
       await db
         .update(rooms)
         .set({
@@ -241,7 +255,7 @@ export async function POST(
           word,
           hint,
           currentTurnId: st.currentTurnId,
-          lastEvent: `${me.name} ya escribió la palabra. ¡A adivinar!`,
+          lastEvent: clipEvent(`${me.name} ya escribió la palabra. ¡A adivinar!`),
           updatedAt: new Date(),
         })
         .where(eq(rooms.id, room.id));
@@ -299,7 +313,7 @@ export async function POST(
       const next = nextTurnId(st.players, room.currentTurnId);
       await db
         .update(rooms)
-        .set({ currentTurnId: next, lastEvent: `Turno saltado`, updatedAt: new Date() })
+        .set({ currentTurnId: next, lastEvent: clipEvent("Turno saltado"), updatedAt: new Date() })
         .where(eq(rooms.id, room.id));
       return finish();
     }
@@ -313,7 +327,7 @@ export async function POST(
       if (target.id === me.id) return err("No puedes expulsarte a ti mismo");
       await db.delete(players).where(eq(players.id, target.id));
       await resolveAfterRemoval(room, target, room.id);
-      await db.update(rooms).set({ lastEvent: `${target.name} fue expulsado`, updatedAt: new Date() }).where(eq(rooms.id, room.id));
+      await db.update(rooms).set({ lastEvent: clipEvent(`${target.name} fue expulsado`), updatedAt: new Date() }).where(eq(rooms.id, room.id));
       return finish();
     }
 
@@ -327,7 +341,7 @@ export async function POST(
       await banPlayer(room.id, banTarget.uid, banTarget.name);
       await db.delete(players).where(eq(players.id, banTarget.id));
       await resolveAfterRemoval(room, banTarget, room.id);
-      await db.update(rooms).set({ lastEvent: `${banTarget.name} fue vetado de la sala`, updatedAt: new Date() }).where(eq(rooms.id, room.id));
+      await db.update(rooms).set({ lastEvent: clipEvent(`${banTarget.name} fue vetado de la sala`), updatedAt: new Date() }).where(eq(rooms.id, room.id));
       return finish();
     }
 

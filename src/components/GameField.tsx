@@ -128,14 +128,18 @@ export default function GameField({
         {guessers.map((p) => {
           const isTurn = p.id === currentTurnId && p.status === "alive";
           const dead = p.status === "hung";
+          // BUGFIX: quien entra a mitad de ronda llega con 0 vidas: no está
+          // ahorcado, solo espera la siguiente ronda.
+          const waitingRound = p.failsTotal === 0;
+          const ghost = dead && !waitingRound;
           return (
             <motion.div
               key={p.id}
               layout
-              animate={{ scale: isTurn ? 1.04 : 1, opacity: dead ? 0.72 : 1 }}
+              animate={{ scale: isTurn ? 1.04 : 1, opacity: ghost || waitingRound ? 0.72 : 1 }}
               className="chalk-card shrink-0 w-[7.6rem] sm:w-36 px-2.5 pt-2.5 pb-2 relative overflow-visible"
               style={{
-                borderColor: isTurn ? p.color : dead ? "rgba(242,239,230,0.15)" : "rgba(242,239,230,0.25)",
+                borderColor: isTurn ? p.color : ghost || waitingRound ? "rgba(242,239,230,0.15)" : "rgba(242,239,230,0.25)",
                 boxShadow: isTurn ? `0 0 24px -6px ${p.color}aa` : undefined,
               }}
             >
@@ -150,15 +154,15 @@ export default function GameField({
                 </motion.span>
               )}
               <Hangman
-                color={dead ? "#8b8778" : p.color}
+                color={ghost || waitingRound ? "#8b8778" : p.color}
                 failsUsed={p.failsUsed}
                 failsTotal={p.failsTotal}
-                mood={dead ? "dead" : "normal"}
+                mood={ghost ? "dead" : "normal"}
                 className="w-full h-24 sm:h-28"
-                glow={!dead}
+                glow={!ghost && !waitingRound}
               />
               <div className="mt-1.5 text-center">
-                <p className="hand text-lg leading-none truncate" style={{ color: dead ? "#8b8778" : p.color }}>
+                <p className="hand text-lg leading-none truncate" style={{ color: ghost || waitingRound ? "#8b8778" : p.color }}>
                   {p.name}
                   {p.isMe ? <span className="text-chalk-dim text-sm"> (tú)</span> : null}
                 </p>
@@ -168,7 +172,9 @@ export default function GameField({
                   </p>
                 )}
                 <p className="text-[0.7rem] font-extrabold tracking-wide text-chalk-dim mt-1">
-                  {dead ? (
+                  {waitingRound ? (
+                    <span className="text-sun/90">ESPERANDO RONDA</span>
+                  ) : dead ? (
                     <span className="text-coral">AHORCADO</span>
                   ) : (
                     <>
